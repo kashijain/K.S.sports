@@ -26,16 +26,17 @@ export const AppContextProvider = (props) => {
 
     const fetchUserData = async () => {
         try {
+            console.log("🟡 Clerk Metadata:", user?.publicMetadata); // ✅ Debug metadata
+
             const role = user?.publicMetadata?.role;
 
             if (role === 'seller') {
                 setIsSeller(true);
             } else {
-                setIsSeller(false); // ✅ Reset for non-sellers
+                setIsSeller(false); // ✅ Ensure reset for non-sellers
             }
 
             setUserData(userDummyData);
-            console.log("✅ User role:", role);
         } catch (error) {
             console.error("❌ Error fetching user data:", error);
         }
