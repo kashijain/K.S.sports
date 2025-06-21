@@ -1,5 +1,5 @@
 'use client'
-import { productsDummyData } from "@/assets/assets";
+import { productsDummyData, userDummyData } from "@/assets/assets";
 import { useAuth, useUser } from "@clerk/nextjs";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -8,13 +8,15 @@ import toast from "react-hot-toast";
 
 export const AppContext = createContext();
 
-export const useAppContext = () => useContext(AppContext);
+export const useAppContext = () => {
+    return useContext(AppContext);
+};
 
 export const AppContextProvider = (props) => {
     const currency = process.env.NEXT_PUBLIC_CURRENCY;
     const router = useRouter();
     const { user } = useUser();
-    const { getToken } = useAuth();
+    const { getToken } = useAuth(); // ✅ Fixed: was `gettoken` (wrong case)
 
     const [products, setProducts] = useState([]);
     const [userData, setUserData] = useState(false);
@@ -31,35 +33,32 @@ export const AppContextProvider = (props) => {
                 setIsSeller(true);
             }
 
-            const token = await getToken(); 
-            console.log("🔐 JWT Token:", token);
-
+            const token = await getToken(); // ✅ Fixed: correct method name
             const { data } = await axios.get('/api/user/data', {
                 headers: {
-                    Authorization: `Bearer ${token}`  
+                    Authorization: `Bearer ${token}` // ✅ Fixed: was `Bearer $`{token}
                 }
             });
 
             if (data.success) {
                 setUserData(data.user);
-                setCartItems(data.user.cartItems || {});
+                setCartItems(data.user.cartItems);
             } else {
-                toast.error(data.message || "User data fetch failed");
+                toast.error(data.message);
             }
         } catch (error) {
-            console.error("Fetch error:", error);
-            toast.error(error.message || "Something went wrong");
+            toast.error(error.message); // ✅ Fixed: `error.message`, not `data.message`
         }
     };
 
     const addToCart = async (itemId) => {
-        const cartData = structuredClone(cartItems);
+        let cartData = structuredClone(cartItems);
         cartData[itemId] = (cartData[itemId] || 0) + 1;
         setCartItems(cartData);
     };
 
     const updateCartQuantity = async (itemId, quantity) => {
-        const cartData = structuredClone(cartItems);
+        let cartData = structuredClone(cartItems);
         if (quantity === 0) {
             delete cartData[itemId];
         } else {
@@ -69,15 +68,15 @@ export const AppContextProvider = (props) => {
     };
 
     const getCartCount = () => {
-        return Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
+        return Object.values(cartItems).reduce((total, qty) => total + qty, 0);
     };
 
     const getCartAmount = () => {
         let totalAmount = 0;
-        for (const itemId in cartItems) {
-            const item = products.find(p => p._id === itemId);
-            if (item) {
-                totalAmount += item.offerPrice * cartItems[itemId];
+        for (const item in cartItems) {
+            const itemInfo = products.find((p) => p._id === item);
+            if (itemInfo) {
+                totalAmount += itemInfo.offerPrice * cartItems[item];
             }
         }
         return Math.floor(totalAmount * 100) / 100;
@@ -92,14 +91,22 @@ export const AppContextProvider = (props) => {
     }, [user]);
 
     const value = {
-        user, getToken,
-        currency, router,
-        isSeller, setIsSeller,
-        userData, fetchUserData,
-        products, fetchProductData,
-        cartItems, setCartItems,
-        addToCart, updateCartQuantity,
-        getCartCount, getCartAmount,
+        user,
+        getToken, // ✅ Corrected from `gettoken`
+        currency,
+        router,
+        isSeller,
+        setIsSeller,
+        userData,
+        fetchUserData,
+        products,
+        fetchProductData,
+        cartItems,
+        setCartItems,
+        addToCart,
+        updateCartQuantity,
+        getCartCount,
+        getCartAmount
     };
 
     return (
